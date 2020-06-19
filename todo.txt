@@ -1,0 +1,32 @@
+Short:
+/ Implement amplifier
+/ Add loudness normalistion amplification rules to LoudnessNormaliser
+/ Reimplement WaveSource and WaveDest to have same behaviour (SetFile)
+/ add progress callback in batch processing
+add tolerance
+add sample peak and true peak
+implement delay cancelation mechanism for filters like Peak limiter
+add sanity check on setting parameters (in normaliser first)
+implement multi measure for loudness (add LRA, Max short term and max instantaneous)
+add processing stats (for benchmarking)
+/ implement auto mono attenuation flag
+implement force normalisation if clipping flag
+implement verbose mode (all params)
+implement Max limiting applied stats 
+implement implement gain to apply stat if linear
+homogeneise behaviour of filters so they keep their internal values atfer terminate 
+Move loudness processor prcessing objects to object rather than method to avoid overhead if the class has to be used multiple outside of a one off exe (may require implementing reset method or modify some init/terminate methods)
+
+
+Medium:
+implement some serialization/automation mechanism for filters and process (load settings from config/description file) and "pipe" result of a process to another (eg inject LUFS analysis result process in gain amplification process)
+add source/dest 24 and 32 bit wav, Wave64, BWF and MPEG2
+implement a IWaveSourceAsync for live source/realtime processing
+
+Long :
+add an audio compression filter
+add an EQ filter
+add an AGC filter
+add noise gate filter
+add append/insertion (for jingle or ads)
+add generic VST2 host filter
