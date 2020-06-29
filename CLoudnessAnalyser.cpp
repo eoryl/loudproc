@@ -25,7 +25,9 @@ int CLoudnessAnalyser::GetIntegratedLoudness(float* pLUFS)
 
 int CLoudnessAnalyser::Init(int iSampleRate, int iChannels)
 {
-	m_pState= ebur128_init(iChannels, iSampleRate, EBUR128_MODE_I);
+	m_pState= ebur128_init(iChannels, iSampleRate, EBUR128_MODE_I | EBUR128_MODE_TRUE_PEAK | EBUR128_MODE_LRA);
+
+	
 	return 0;
 }
 

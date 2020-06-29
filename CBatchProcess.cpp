@@ -61,7 +61,8 @@ int CBatchProcess::ProcessAllFrames()
 		 || (m_oFilterChain.size() <=0)
 		)
 		return AP_E_NOT_INITIALISED;
-
+	
+	// TODO: make buffersize configurable
 	int iError, iSampleRate = 0, iChannelCount = 0, iFrameBufferSize = 1920, iFramesRead = 0, iActualFrameCount = 0;
 	float* pfFramesBuffer = NULL;
 	long long qFrameCount, qTotalDelay= 0;
