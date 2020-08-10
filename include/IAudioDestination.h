@@ -20,7 +20,7 @@ public:
 	Sample values should range between -1.0f and 1.0f
 	in pfFrames : Address to the buffer (array of float) of frames to process.
 				   Restult is stored in place (the filtered samples are to be written in pfSamples)
-	in iCount : Total number of samples per channels to process
+	in iCount : Total number of samples per channels to process (nb of frames)
 	*/
 	virtual int ProcessFrames(float* pfFrames, int iSampleCount) = 0;
 

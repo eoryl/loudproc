@@ -12,6 +12,7 @@ of 2GB. A bit over 3 hours long for PCM 16 bit 48000 stereo files.
 
 class CWAVReader : public IAudioSource
 {
+protected:
 	std::wstring m_oFile;
 
 	// mmio api
@@ -37,7 +38,7 @@ class CWAVReader : public IAudioSource
 public:
 
 	CWAVReader();
-	~CWAVReader();
+	virtual ~CWAVReader();
 
 	int SetFileName(std::wstring oFile);
 	std::wstring GetFileName();

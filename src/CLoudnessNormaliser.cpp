@@ -6,7 +6,9 @@
 #include "CAmplifier.h"
 #include "CLoudnessAnalyser.h"
 #include "CPeakLimiter.h"
-#include "CPeakDetector.h"
+#include "CSamplePeakDetector.h"
+#include "CSRCSourceAdapter.h"
+#include "CSRCDestinationAdapter.h"
 #include "errorcodes.h"
 
 
@@ -15,9 +17,10 @@ CLoudnessNormaliser::CLoudnessNormaliser()
 	m_bAnalysed = false;
 	m_fLoudnessRange = 0.0f;
 	m_fMaxMomentaryLoudness = -INFINITY;
-	m_fMaxShorTermLoudness = -INFINITY;
+	m_fMaxShortTermLoudness = -INFINITY;
 	m_fIntegratedLoudness = -INFINITY;
 	m_fTruepeak = -INFINITY;
+	m_fSamplepeak = -INFINITY;
 	m_iSampleRate = 48000;
 	m_iChannel = 2;
 	m_bMonoAttenuation = false;
@@ -33,15 +36,19 @@ CLoudnessNormaliser::CLoudnessNormaliser()
 	m_fPreProcessingLimiterAttack = 20.0f;
 	m_fPreProcessingLimiterRelease = 20.0f;
 	m_fPreProcessingLimiterThreshold = -1.0f;
+	m_fPreProcessingLimiterMaxGainReduction = 0.0f;
 
 	// post processing params
 	m_bPostProcessingLimiterEnabled = false;
 	m_fPostProcessingLimiterAttack = 20.0f;
 	m_fPostProcessingLimiterRelease = 20.0f;
 	m_fPostProcessingLimiterThreshold = -1.0f;
-
+	m_fPostProcessingLimiterMaxGainReduction = 0.0f;
 	m_pfProgressCallback = NULL;
 	m_pvProgressCallbackContext = NULL;
+
+	// upsampling
+	m_bEnableUpsampling = false;
 }
 
 CLoudnessNormaliser::~CLoudnessNormaliser()
@@ -85,6 +92,12 @@ int CLoudnessNormaliser::SetPostProcessing(bool bLimiterEnabled, float fLimiterP
 	return 0;
 }
 
+int CLoudnessNormaliser::SetUpsamplingEnabled(bool bEnabled)
+{
+	m_bEnableUpsampling = bEnabled;
+	return 0;
+}
+
 
 int CLoudnessNormaliser::SetTargetLoudness(float fLUFS)
 {
@@ -105,7 +118,6 @@ int CLoudnessNormaliser::SetMonoAttenution(bool bEnabled)
 }
 
 
-
 void CLoudnessNormaliser::SetProgressCallback(NORMALISER_CALLBACK pfCallback, void* pvContext)
 {
 	m_pfProgressCallback = pfCallback;
@@ -115,6 +127,12 @@ void CLoudnessNormaliser::SetProgressCallback(NORMALISER_CALLBACK pfCallback, vo
 int CLoudnessNormaliser::GetMeasuredTruePeak(float* val)
 {
 	*val = m_fTruepeak;
+	return 0;
+}
+
+int CLoudnessNormaliser::GetMeasuredSamplePeak(float* val)
+{
+	*val = m_fSamplepeak;
 	return 0;
 }
 
@@ -135,7 +153,7 @@ int CLoudnessNormaliser::GetMeasuredMaxMomentaryLoudness(float* val)
 int CLoudnessNormaliser::GetMeasuredMaxShorTermLoudness(float* val)
 {
 	if (!m_bAnalysed) return AP_E_NOT_INITIALISED;
-	*val = m_fMaxShorTermLoudness;
+	*val = m_fMaxShortTermLoudness;
 	return 0;
 }
 
@@ -143,6 +161,18 @@ int CLoudnessNormaliser::GetMeasuredIntegratedLoudness(float* val)
 {
 	if (!m_bAnalysed) return AP_E_NOT_INITIALISED;
 	*val = m_fIntegratedLoudness;
+	return 0;
+}
+
+int CLoudnessNormaliser::GetPreProcessingStats(float* pfLimiterMaxGainReductiondB)
+{
+	*pfLimiterMaxGainReductiondB = m_fPreProcessingLimiterMaxGainReduction;
+	return 0;
+}
+
+int CLoudnessNormaliser::GetPostProcessingStats(float* pfLimiterMaxGainReductiondB)
+{
+	*pfLimiterMaxGainReductiondB = m_fPostProcessingLimiterMaxGainReduction;
 	return 0;
 }
 
@@ -191,13 +221,25 @@ int CLoudnessNormaliser::Analyse()
 	CAmplifier oPreProcAmplifier;
 	CPeakLimiter oPreProcPeakLimiter;
 	CLoudnessAnalyser oLoudnessAnalyser;
-	CPeakDetector oPeakDetector;
+	CSamplePeakDetector oPeakDetector;
+	CSRCSourceAdapter oSourceSampleRateConverter;
 
 	std::vector<IAudioFilter*> oFilterList;
 	int iError;
 
-	oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
-	oProcessing.SetBlockDuration(40);
+	if (m_bEnableUpsampling)
+	{
+		oSourceSampleRateConverter.SetBlockDuration(400);
+		oSourceSampleRateConverter.SetTargetSampleRate(192000);
+		oSourceSampleRateConverter.SetSource( dynamic_cast<IAudioSource*>(&oWaveSource));
+		oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oSourceSampleRateConverter));
+	}
+	else
+	{
+		oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
+	}
+	// we will use 400ms blocks to match momentary loudness window
+	oProcessing.SetBlockDuration(400);
 	//oProcessing.SetProgressCallback(&CLoudnessNormaliser::ProgessCallback, NULL);
 	oProcessing.SetProgressCallback(m_pfProgressCallback, m_pvProgressCallbackContext);
 
@@ -219,17 +261,28 @@ int CLoudnessNormaliser::Analyse()
 	oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oPeakDetector));
 	oProcessing.SetFilters(oFilterList);
 	oWaveSource.SetFileName(m_oInputFIle);
-	WAVEFORMATEX wfx;
-	iError = oWaveSource.GetFileFormat(&wfx);
-	if (iError)	return iError;
-	m_iSampleRate = wfx.nSamplesPerSec;
-	m_iChannel = wfx.nChannels;
+	//WAVEFORMATEX wfx;
+	//iError = oWaveSource.GetFileFormat(&wfx);
+	//if (iError)	return iError;
+	//m_iSampleRate = wfx.nSamplesPerSec;
+	//m_iChannel = wfx.nChannels;
+
+	//iError = oWaveSource.GetFormat(&m_iSampleRate, &m_iChannel);
+	//if (iError)	return iError;
 
 	iError = oProcessing.ProcessAllFrames();
 	if (iError)	return iError;
 	iError = oLoudnessAnalyser.GetIntegratedLoudness(&m_fIntegratedLoudness);
 	if (iError)	return iError;
-	iError = oPeakDetector.GetPeakValue(&m_fTruepeak);
+	iError = oLoudnessAnalyser.GetTruePeak(&m_fTruepeak);
+	if (iError)	return iError;
+	iError = oPeakDetector.GetPeakValue(&m_fSamplepeak);
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetMaxMomentaryLoudness(&m_fMaxMomentaryLoudness );
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetMaxShortTermLoudness(&m_fMaxShortTermLoudness);
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetLoudnessRange(&m_fLoudnessRange);
 	if (iError)	return iError;
 	m_bAnalysed = true;
 	return 0;
@@ -257,12 +310,27 @@ int CLoudnessNormaliser::Normalise()
 
 	CAmplifier oAmplifier;
 	CPeakLimiter oPeakLimiter;
-	CPeakDetector oPeakDetector;
+	CSamplePeakDetector oPeakDetector;
 
 	std::vector<IAudioFilter*> oFilterList;
 
-	oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
-	oProcessing.SetBlockDuration(40);
+	CSRCSourceAdapter oSourceSampleRateConverter;
+	CSRCDestinationAdapter oDestinationSampleRateConverter;
+
+
+	if (m_bEnableUpsampling)
+	{
+		oSourceSampleRateConverter.SetBlockDuration(400);
+		oSourceSampleRateConverter.SetTargetSampleRate(192000);
+		oSourceSampleRateConverter.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
+		oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oSourceSampleRateConverter));
+	}
+	else
+	{
+		oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
+	}
+
+	oProcessing.SetBlockDuration(400);
 	//oProcessing.SetProgressCallback(&CLoudnessNormaliser::ProgessCallback, NULL);
 	oProcessing.SetProgressCallback(m_pfProgressCallback, m_pvProgressCallbackContext);
 
@@ -298,7 +366,20 @@ int CLoudnessNormaliser::Normalise()
 	}
 	oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oLoudnessAnalyser));
 	oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oPeakDetector));
-	oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oWaveDestination));
+
+	if (m_bEnableUpsampling)
+	{
+		oDestinationSampleRateConverter.SetBlockDuration(400);
+		oDestinationSampleRateConverter.SetTargetSampleRate(48000);
+		oDestinationSampleRateConverter.Set24bitOutput(false);
+		oDestinationSampleRateConverter.SetDestination(dynamic_cast<IAudioDestination*>(&oWaveDestination));
+		oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oDestinationSampleRateConverter));
+	}
+	else
+	{
+		oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oWaveDestination));
+	}
+
 	oProcessing.SetFilters(oFilterList);
 
 	oWaveSource.SetFileName(m_oInputFIle);
@@ -307,11 +388,48 @@ int CLoudnessNormaliser::Normalise()
 	if (iError)	return iError;
 	iError = oLoudnessAnalyser.GetIntegratedLoudness(&m_fIntegratedLoudness);
 	if (iError)	return iError;
-	iError = oPeakDetector.GetPeakValue(&m_fTruepeak);
+	iError = oLoudnessAnalyser.GetTruePeak(&m_fTruepeak);
+	if (iError)	return iError;
+	iError =  oPeakDetector.GetPeakValue(&m_fSamplepeak);
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetMaxMomentaryLoudness(&m_fMaxMomentaryLoudness);
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetMaxShortTermLoudness(&m_fMaxShortTermLoudness);
+	if (iError)	return iError;
+	iError = oLoudnessAnalyser.GetLoudnessRange(&m_fLoudnessRange);
+	if (iError)	return iError;
+
+	//
+	m_fPreProcessingLimiterMaxGainReduction = oPreProcPeakLimiter.GetMaxGainReduction();
+	if (iError)	return iError;
+	m_fPostProcessingLimiterMaxGainReduction = oPeakLimiter.GetMaxGainReduction();
 	if (iError)	return iError;
 	m_bAnalysed = true;
 
 	return 0;
+}
+
+void CLoudnessNormaliser::Test()
+{
+	CBatchProcess oProcessing;
+	CWAVReader oWaveSource;
+	CWAVWriter oWaveDestination;
+	CSRCSourceAdapter oSourceResampler;
+	std::vector<IAudioFilter*> oFIlters;
+	int iError;
+
+	iError = oWaveSource.SetFileName(m_oInputFIle);
+	iError = oWaveDestination.SetFileName(m_oOutputFIle);
+	iError = oSourceResampler.SetSource(&oWaveSource);
+	iError = oSourceResampler.SetTargetSampleRate(192000);
+	iError = oSourceResampler.SetBlockDuration(400);
+
+	oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oSourceResampler));
+	oProcessing.SetBlockDuration(400);
+	oFIlters.push_back(&oWaveDestination);
+	oProcessing.SetFilters(oFIlters);
+
+	iError = oProcessing.ProcessAllFrames();
 }
 
 int CLoudnessNormaliser::ProgessCallback(int status, unsigned long long processed, void* ctx)

@@ -8,6 +8,7 @@
 #ifndef linearTodBFS
 #define linearTodBFS(linear)  (20.0f* log10f(fabsf((linear))))
 #endif 
+
 /** Get dbFS and return a linear value of a flat sample (min value -1.0 to max value 1.0)
 * @Returns lienar value
 */

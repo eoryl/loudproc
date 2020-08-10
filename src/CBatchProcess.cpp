@@ -11,7 +11,7 @@
 CBatchProcess::CBatchProcess()
 {
 	m_poAudioSource = NULL;
-	m_iBlockDurationms = 40;
+	m_iBlockDurationms = 400;
 	m_pfProgressCallback = NULL;
 	m_pvProgressCallbackContext = NULL;
 	m_qFramesProcessed = 0;
@@ -24,6 +24,7 @@ CBatchProcess::~CBatchProcess()
 int CBatchProcess::SetBlockDuration(int iDurationms)
 {
 	if (iDurationms <= 0) return AP_E_FAIL;
+	m_iBlockDurationms = iDurationms;
 	return 0;
 }
 

@@ -1,14 +1,14 @@
 #pragma once
 #include "IAudioFilter.h"
-class CPeakDetector : public IAudioFilter
+class CSamplePeakDetector : public IAudioFilter
 {
 protected:
     float* m_pfPeaks;
     int m_iChannelCount;
 
 public:
-    CPeakDetector();
-    ~CPeakDetector();
+    CSamplePeakDetector();
+    virtual ~CSamplePeakDetector();
 
     int GetPeakValue(float* peak);
     int GetPeakValue(float* peak, int channel);

@@ -9,7 +9,7 @@ protected:
 public:
 	//
 	CAmplifier();
-	~CAmplifier();
+	virtual ~CAmplifier();
 
 	int SetGain(float fGain);
 	float GetGain();

@@ -4,26 +4,29 @@ Short:
 / Reimplement WaveSource and WaveDest to have same behaviour (SetFile)
 / add progress callback in batch processing
 add tolerance +/- x LUFS tolerance parameter and support in analysis
-add sample peak (from peak detector) and true peak (from LUFSMeter)
+/ add sample peak (from peak detector) and true peak (from LUFSMeter)
 / implement delay cancelation mechanism for filters like Peak limiter
 add sanity check on setting parameters (in normaliser first)
-implement multi measure for loudness (add LRA, Max short term and max instantaneous)
+/ implement multi measure for loudness (add LRA, Max short term and max instantaneous)
 add processing stats (for benchmarking)
 / implement auto mono attenuation flag
 implement force normalisation if clipping flag
-implement verbose mode (all params)
-implement Max limiting applied stats 
-implement implement gain to apply stat if linear
-implement max gain reduction stat if non linear (limiter applied)
+implement verbose mode (list all params)
+use maxTP in gain calculation 
+project max momentary and max short term loudness after correction
+/ implement implement gain to apply stat if linear
+/ implement max gain reduction stat if non linear (limiter applied)
+implement GetTotalFrameCount in IWaveSource an %progress instead of cumulative frame processed count
 homogeneise behaviour of filters so they keep their internal values atfer terminate 
 Move loudness processor prcessing objects to object rather than method to avoid overhead if the class has to be used multiple outside of a one off exe (may require implementing reset method or modify some init/terminate methods)
-
+Add max momentary and max short term to linear normalisation test
 
 Medium:
+/ implement upsampling to 192kHz on source (using interpolation), 
+consider using double precision samples instead of float (or implement both for to have fast and precision mode) and separated channels instead of interleaved
 implement some serialization/automation mechanism for filters and process (load settings from config/description file) and "pipe" result of a process to another (eg inject LUFS analysis result process in gain amplification process)
-add source/dest 24 and 32 bit wav, Wave64, BWF and MPEG2
+add source/dest 24 and 32 bit wav, Wave64, BWF and MPEG2 (either libavformat+libavcodecs OR libsndfile+mpg123)
 implement a IWaveSourceAsync for live source/realtime processing
-implement upsampling to 192kHz on source (using interpolation), consider using double precision samples instead of float 
 
 Long :
 add an audio compression filter

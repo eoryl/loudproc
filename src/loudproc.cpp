@@ -59,6 +59,7 @@ int main(int argc, char** argv)
     args::ValueFlag<double> targetMaxTruePeak(parser, "dbFS", "Target maximum true peak (default -1dBFS)", { 'k', "max-true-peak" });
 
     args::Flag monoAttenuation(parser, "mono", "Auto attenuate gain on mono signal if set (halves linear gain / approx -3 LUFS)", { 'm', "mono-attenuation" });
+    args::Flag disableUpsampling(parser, "upsampling", "Disable 192kHz 64bit upsampling for faster processing but less accurate peak measurements", { 'd', "disable-upsampling" });
 
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     
@@ -107,6 +108,8 @@ int main(int argc, char** argv)
         release?release.Get() : 20.0f
     );
 
+    oNormaliser.SetUpsamplingEnabled(!disableUpsampling.Get());
+
     if (targetLoudness)
         oNormaliser.SetTargetLoudness((float)targetLoudness.Get());
     if (targetMaxTruePeak)
@@ -115,6 +118,12 @@ int main(int argc, char** argv)
         oNormaliser.SetProgressCallback(&ProgessCallback, NULL);
     oNormaliser.SetMonoAttenution(monoAttenuation.Get());
 
+    //
+    //oNormaliser.Test();
+    //return 0;
+    //
+
+    printf("Analysis:\r\n");
     int err;
     err = oNormaliser.Analyse();
     if (err != 0)
@@ -123,13 +132,21 @@ int main(int argc, char** argv)
         return err;
     }
 
-    float loudness = 0;
-    oNormaliser.GetMeasuredIntegratedLoudness(&loudness);
-    printf("loudness: %f LUFS\r\n", loudness);
-
-    float peak = 0;
-    oNormaliser.GetMeasuredTruePeak(&peak);
-    printf("peak: %f dBFS\r\n", linearTodBFS(peak));
+    float val = 0;
+    oNormaliser.GetMeasuredIntegratedLoudness(&val);
+    printf("integrated loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredTruePeak(&val);
+    printf("true peak: %.2f dBTP\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredSamplePeak(&val);
+    printf("sample peak: %.2f dBFS\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredMaxMomentaryLoudness (&val);
+    printf("max momentary loudness: %.2f dBFS\r\n", val);
+    oNormaliser.GetMeasuredMaxShorTermLoudness (&val);
+    printf("max short term loudness: %.2f dBFS\r\n", val);
+    oNormaliser.GetMeasuredLoudnessRange(&val);
+    printf("loudness range: %.2f LU\r\n", val);
+    oNormaliser.GetNormalisationGain(&val);
+    printf("gain to be applied: %.2f dB\r\n", linearTodBFS(val));
 
     bool linear;
     oNormaliser.IsLinearNormalisationPossible(&linear);
@@ -142,17 +159,36 @@ int main(int argc, char** argv)
         printf("Normalisation not possible with provided parameters. Change target loudness/true peak or enable limiter.");
         return 1;
     }
+    printf("\r\nNormalisation:\r\n");
     err = oNormaliser.Normalise();
     if (err != 0)
     {
         std::cout << "Normalisation failed!" << std::endl;
     }
-    oNormaliser.GetMeasuredIntegratedLoudness(&loudness);
-    printf("loudness: %f LUFS\r\n", loudness);
 
-    oNormaliser.GetMeasuredTruePeak(&peak);
-    printf("peak: %f dBFS\r\n", linearTodBFS(peak));
+    oNormaliser.GetMeasuredIntegratedLoudness(&val);
+    printf("integrated loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredTruePeak(&val);
+    printf("true peak: %.2f dBTP\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredSamplePeak(&val);
+    printf("sample peak: %.2f dBFS\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredMaxMomentaryLoudness(&val);
+    printf("max momentary loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredMaxShorTermLoudness(&val);
+    printf("max short term loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredLoudnessRange(&val);
+    printf("loudness range: %.2f LU\r\n", val);
 
+    if (preProcLimiterEnabled.Get())
+    {
+        oNormaliser.GetPreProcessingStats(&val);
+        printf("preproc max gain reduction: %.2f dB\r\n", val);
+    }
+    if (limiterEnabled.Get())
+    {
+        oNormaliser.GetPostProcessingStats(&val);
+        printf("postproc max gain reduction: %.2f dB\r\n", val);
+    }
     return 0;
 
 

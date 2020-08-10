@@ -30,9 +30,10 @@ public:
 	Retrieves samples from the source.
 	It is expected that all sources/filters will work on interleaved PCM float samples array.
 	Sample values should range between -1.0f and 1.0f
-	in pfFrames : Address to the buffer (array of float) to write the samples to
-	in iCount : Total number of samples per channels to write
-	out iActualCount : Number of samples actually written to the float buffer
+	in pfFrames : Address to the buffer (array of float) to write the samples to. 
+		the floats buffer size is iCount * channels (1 frame = 1 float sample per channel)
+	in iCount : The size of buffer in frames (the buffer size in float sample is iCount * channel )
+	out iActualCount : Number of frames actually written to the float buffer
 	*/
 	virtual int GetFrames(float* pfFrames, int iCount, int* iActualCount) = 0;
 };

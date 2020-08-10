@@ -72,15 +72,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <SourcePath>$(ProjectDir)\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(ProjectDir)\lib\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <SourcePath>$(ProjectDir)\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(ProjectDir)\lib\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <SourcePath>$(ProjectDir)\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)\lib\Win64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <SourcePath>$(ProjectDir)\src;$(SourcePath)</SourcePath>
+    <IncludePath>$(ProjectDir)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)\lib\Win64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -93,7 +105,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;r8bsrc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -111,7 +123,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;r8bsrc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -125,7 +137,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;r8bsrc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,49 +155,55 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Winmm.lib;r8bsrc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CAmplifier.cpp" />
-    <ClCompile Include="CBatchProcess.cpp" />
-    <ClCompile Include="CAudioTools.cpp" />
-    <ClCompile Include="CLoudnessAnalyser.cpp" />
-    <ClCompile Include="CLoudnessNormaliser.cpp" />
-    <ClCompile Include="CPeakDetector.cpp" />
-    <ClCompile Include="CPeakLimiter.cpp" />
-    <ClCompile Include="CStringTools.cpp" />
-    <ClCompile Include="CWAVWriter.cpp" />
-    <ClCompile Include="CWAVReader.cpp" />
-    <ClCompile Include="ebur128.c" />
-    <ClCompile Include="loudproc.cpp" />
-    <ClCompile Include="peakLimiter.cpp" />
-    <ClCompile Include="wave.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="args.hxx" />
-    <ClInclude Include="CBatchProcess.h" />
-    <ClInclude Include="CAmplifier.h" />
-    <ClInclude Include="CAudioTools.h" />
-    <ClInclude Include="CLoudnessAnalyser.h" />
-    <ClInclude Include="CLoudnessNormaliser.h" />
-    <ClInclude Include="CPeakDetector.h" />
-    <ClInclude Include="CPeakLimiter.h" />
-    <ClInclude Include="CStringTools.h" />
-    <ClInclude Include="CWAVWriter.h" />
-    <ClInclude Include="CWAVReader.h" />
-    <ClInclude Include="debug.h" />
-    <ClInclude Include="ebur128.h" />
-    <ClInclude Include="errorcodes.h" />
-    <ClInclude Include="IAudioDestination.h" />
-    <ClInclude Include="IAudioFilter.h" />
-    <ClInclude Include="IAudioSource.h" />
-    <ClInclude Include="macros.h" />
-    <ClInclude Include="peakLimiter.h" />
-    <ClInclude Include="wave.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="todo.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CAmplifier.cpp" />
+    <ClCompile Include="src\CAudioTools.cpp" />
+    <ClCompile Include="src\CBatchProcess.cpp" />
+    <ClCompile Include="src\CLoudnessAnalyser.cpp" />
+    <ClCompile Include="src\CLoudnessNormaliser.cpp" />
+    <ClCompile Include="src\CPeakLimiter.cpp" />
+    <ClCompile Include="src\CSamplePeakDetector.cpp" />
+    <ClCompile Include="src\CSRCDestinationAdapter.cpp" />
+    <ClCompile Include="src\CStringTools.cpp" />
+    <ClCompile Include="src\CWAVReader.cpp" />
+    <ClCompile Include="src\CSRCSourceAdapter.cpp" />
+    <ClCompile Include="src\CWAVWriter.cpp" />
+    <ClCompile Include="src\ebur128.c" />
+    <ClCompile Include="src\loudproc.cpp" />
+    <ClCompile Include="src\peakLimiter.cpp" />
+    <ClCompile Include="src\wave.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\args.hxx" />
+    <ClInclude Include="include\CAmplifier.h" />
+    <ClInclude Include="include\CAudioTools.h" />
+    <ClInclude Include="include\CBatchProcess.h" />
+    <ClInclude Include="include\CLoudnessAnalyser.h" />
+    <ClInclude Include="include\CLoudnessNormaliser.h" />
+    <ClInclude Include="include\CPeakLimiter.h" />
+    <ClInclude Include="include\CSamplePeakDetector.h" />
+    <ClInclude Include="include\CSRCDestinationAdapter.h" />
+    <ClInclude Include="include\CStringTools.h" />
+    <ClInclude Include="include\CWAVReader.h" />
+    <ClInclude Include="include\CSRCSourceAdapter.h" />
+    <ClInclude Include="include\CWAVWriter.h" />
+    <ClInclude Include="include\debug.h" />
+    <ClInclude Include="include\ebur128.h" />
+    <ClInclude Include="include\errorcodes.h" />
+    <ClInclude Include="include\IAudioDestination.h" />
+    <ClInclude Include="include\IAudioFilter.h" />
+    <ClInclude Include="include\IAudioSource.h" />
+    <ClInclude Include="include\macros.h" />
+    <ClInclude Include="include\peakLimiter.h" />
+    <ClInclude Include="include\r8bsrc.h" />
+    <ClInclude Include="include\sys\queue.h" />
+    <ClInclude Include="include\wave.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

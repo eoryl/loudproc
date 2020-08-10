@@ -1,4 +1,4 @@
-#include "CPeakDetector.h"
+#include "CSamplePeakDetector.h"
 
 #include <algorithm>
 
@@ -6,26 +6,27 @@
 #include "errorcodes.h"
 #include "CAudioTools.h"
 
-CPeakDetector::CPeakDetector()
+CSamplePeakDetector::CSamplePeakDetector()
 {
 	m_iChannelCount = 0;
 	m_pfPeaks = NULL;
 }
 
-CPeakDetector::~CPeakDetector()
+CSamplePeakDetector::~CSamplePeakDetector()
 {
 	SAFE_ARRAY_DELETE(m_pfPeaks);
 }
 
-int CPeakDetector::GetPeakValue(float* peak)
+int CSamplePeakDetector::GetPeakValue(float* peak)
 {
 	if (m_pfPeaks == NULL) return AP_E_NOT_INITIALISED;
 	*peak = 0;
 	for (int i = 0; i < m_iChannelCount; i++) *peak = std::max(*peak, m_pfPeaks[i]);
+
 	return 0;
 }
 
-int CPeakDetector::GetPeakValue(float* peak, int channel)
+int CSamplePeakDetector::GetPeakValue(float* peak, int channel)
 {
 	if (m_pfPeaks == NULL) return AP_E_NOT_INITIALISED;
 	if ((channel < 0) || (channel >= m_iChannelCount)) return AP_E_INVALID_ARGUMENT;
@@ -33,14 +34,14 @@ int CPeakDetector::GetPeakValue(float* peak, int channel)
 	return 0;
 }
 
-bool CPeakDetector::HasClipped()
+bool CSamplePeakDetector::HasClipped()
 {
 	float fPeak;
 	if (GetPeakValue(&fPeak) != 0) return false;
 	return (fPeak > 1.0f);
 }
 
-int CPeakDetector::Init(int iSampleRate, int iChannels)
+int CSamplePeakDetector::Init(int iSampleRate, int iChannels)
 {
 	m_iChannelCount = 0;
 	SAFE_ARRAY_DELETE(m_pfPeaks);
@@ -53,12 +54,12 @@ int CPeakDetector::Init(int iSampleRate, int iChannels)
 	return 0;
 }
 
-int CPeakDetector::Terminate()
+int CSamplePeakDetector::Terminate()
 {
 	return 0;
 }
 
-int CPeakDetector::ProcessFrames(float * pfFrames, int iFrameCount)
+int CSamplePeakDetector::ProcessFrames(float * pfFrames, int iFrameCount)
 {
 	if (m_pfPeaks == NULL) return AP_E_NOT_INITIALISED;
 	int i;
@@ -71,7 +72,7 @@ int CPeakDetector::ProcessFrames(float * pfFrames, int iFrameCount)
 	return 0;
 }
 
-int CPeakDetector::GetDelay()
+int CSamplePeakDetector::GetDelay()
 {
 	return 0;
 }

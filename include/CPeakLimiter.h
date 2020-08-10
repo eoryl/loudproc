@@ -15,7 +15,7 @@ class CPeakLimiter : public IAudioFilter
 
 public :
 	CPeakLimiter();
-	~CPeakLimiter();
+	virtual ~CPeakLimiter();
 	
 	int SetAttack(float fAttack_ms);
 	int SetRelease(float fRelease_ms);
@@ -24,6 +24,9 @@ public :
 	float GetAttack();
 	float GetRelease();
 	float GetPeakLimit();
+
+	//
+	float GetMaxGainReduction();
 
 	// Inherited via IAudioFilter
 	virtual int Init(int iSampleRate, int iChannels) override;

@@ -90,3 +90,8 @@ float CPeakLimiter::GetPeakLimit()
 {
 	return m_fPeakLimitdBFS;
 }
+
+float CPeakLimiter::GetMaxGainReduction()
+{
+	return m_fMaxGainReduction;
+}

@@ -31,7 +31,7 @@ class CWAVWriter : public IAudioFilter
 public:
 
 	CWAVWriter();
-	~CWAVWriter();
+	virtual ~CWAVWriter();
 
 
 	int SetFileName(std::wstring oFile);
