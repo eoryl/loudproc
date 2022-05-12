@@ -17,13 +17,13 @@ int ProgessCallback(int status, unsigned long long processed, void* ctx)
     switch ((BatchProcessProgressStatus)status)
     {
     case BPS_END:
-        printf("\r\n", processed);
+        printf("\r\n");
         break;
     case BPS_ERROR:
-        printf("\r\nError\r\n", processed);
+        printf("\r\nError\r\n");
         break;
     case BPS_PROCESS:
-        printf("frames processed: %ld \r", processed);
+        printf("frames processed: %lld \r", processed);
         break;
     }
     return 0;
@@ -37,7 +37,10 @@ int main(int argc, char** argv)
     
     args::Positional<std::string> inputFile(parser, "input", "The source file to process");    
     args::Positional<std::string> outputFile(parser, "output", "The target file to store processed audio. If not specified, only analysis is performed.");
-    
+
+    args::ValueFlag<double> targetLoudness(parser, "LUFS", "Target loudness (default -23LUFS)", { 'u', "loudness" });
+    args::ValueFlag<double> targetMaxTruePeak(parser, "dbFS", "Target maximum true peak (default -1dBFS)", { 'k', "max-true-peak" });
+
     // TODO
     //args::Flag verbose(parser, "verbose", "Enable verbose mode", { 'v', "verbose" });
     args::Flag progress(parser, "progress", "Print progress.", { 'p', "progress" });    
@@ -55,11 +58,8 @@ int main(int argc, char** argv)
     args::ValueFlag<int> preProcRelease(parser, "ms", "Preprocessor peak limiter release in ms (default 20ms)", { 'R', "preproc-release" });
     args::ValueFlag<int> preProcThreshold(parser, "db", "Preprocessor peak limiter threshold in dBFS (default -1dBFS)", { 'T', "preproc-threshold" });
 
-    args::ValueFlag<double> targetLoudness(parser, "LUFS", "Target loudness (default -23LUFS)", { 'u', "loudness" });
-    args::ValueFlag<double> targetMaxTruePeak(parser, "dbFS", "Target maximum true peak (default -1dBFS)", { 'k', "max-true-peak" });
-
     args::Flag monoAttenuation(parser, "mono", "Auto attenuate gain on mono signal if set (halves linear gain / approx -3 LUFS)", { 'm', "mono-attenuation" });
-    args::Flag disableUpsampling(parser, "upsampling", "Disable 192kHz 64bit upsampling for faster processing but less accurate peak measurements", { 'd', "disable-upsampling" });
+    args::Flag enableUpsampling(parser, "upsampling", "Enable 192kHz 64bit upsampling for increased accuracy but slower processing ", { 's', "enable-upsampling" });
 
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
         std::cout << "No input file. Use -h for detailed help." << std::endl;
         return 0;
     }
-  
+
     std::wstring in = CStringTools::StringToWideString(inputFile.Get());
     std::wstring out = CStringTools::StringToWideString(outputFile.Get());
 
@@ -108,14 +108,14 @@ int main(int argc, char** argv)
         release?release.Get() : 20.0f
     );
 
-    oNormaliser.SetUpsamplingEnabled(!disableUpsampling.Get());
+    oNormaliser.SetUpsamplingEnabled(enableUpsampling.Get());
 
     if (targetLoudness)
         oNormaliser.SetTargetLoudness((float)targetLoudness.Get());
     if (targetMaxTruePeak)
         oNormaliser.SetTargetLoudnessTruePeak((float)targetMaxTruePeak.Get());
     if (progress) 
-        oNormaliser.SetProgressCallback(&ProgessCallback, NULL);
+        oNormaliser.SetProgressCallback(&CLoudnessNormaliser::ProgessCallback, &oNormaliser);
     oNormaliser.SetMonoAttenution(monoAttenuation.Get());
 
     //
@@ -133,24 +133,39 @@ int main(int argc, char** argv)
     }
 
     float val = 0;
-    oNormaliser.GetMeasuredIntegratedLoudness(&val);
-    printf("integrated loudness: %.2f LUFS\r\n", val);
-    oNormaliser.GetMeasuredTruePeak(&val);
-    printf("true peak: %.2f dBTP\r\n", linearTodBFS(val));
-    oNormaliser.GetMeasuredSamplePeak(&val);
-    printf("sample peak: %.2f dBFS\r\n", linearTodBFS(val));
-    oNormaliser.GetMeasuredMaxMomentaryLoudness (&val);
-    printf("max momentary loudness: %.2f dBFS\r\n", val);
-    oNormaliser.GetMeasuredMaxShorTermLoudness (&val);
-    printf("max short term loudness: %.2f dBFS\r\n", val);
-    oNormaliser.GetMeasuredLoudnessRange(&val);
-    printf("loudness range: %.2f LU\r\n", val);
-    oNormaliser.GetNormalisationGain(&val);
-    printf("gain to be applied: %.2f dB\r\n", linearTodBFS(val));
-
     bool linear;
+    long long llFileDuration = 0, llAnalysisDuration = 0, llNormalisationDuration = 0;
+    float rtAnalysis = NAN, rtNormalisation = NAN;
+    oNormaliser.GetMeasuredIntegratedLoudness(&val);
+    printf("Integrated loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredTruePeak(&val);
+    printf("True peak: %.2f dBTP\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredSamplePeak(&val);
+    printf("Sample peak: %.2f dBFS\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredMaxMomentaryLoudness (&val);
+    printf("Max momentary loudness: %.2f dBFS\r\n", val);
+    oNormaliser.GetMeasuredMaxShorTermLoudness (&val);
+    printf("Max short term loudness: %.2f dBFS\r\n", val);
+    oNormaliser.GetMeasuredLoudnessRange(&val);
+    printf("Loudness range: %.2f LU\r\n", val);
     oNormaliser.IsLinearNormalisationPossible(&linear);
+    if (preProcLimiterEnabled.Get())
+    {
+        oNormaliser.GetPreProcessingStats(&val);
+        printf("Preproc max gain reduction: %.2f dB\r\n", val);
+    }
     printf("Linear normalisation possible: %s\r\n", (linear ? "yes" : "no"));
+    oNormaliser.GetNormalisationGain(&val);
+    printf("Gain to be applied: %.2f dB\r\n", linearTodBFS(val));
+
+    oNormaliser.GetFileDuration(&llFileDuration);
+    oNormaliser.GetAnalysisTime(&llAnalysisDuration);
+    rtAnalysis = llFileDuration;
+    if (llAnalysisDuration != 0)
+        rtAnalysis /= llAnalysisDuration;
+    else
+        rtAnalysis = NAN;
+    printf("Analysed in: %s (%.3f x real time) \r\n", CStringTools::FormatTimeCode(llAnalysisDuration).c_str(), rtAnalysis);
 
     if (outputFile.Get().empty()) return 0;
 
@@ -166,31 +181,46 @@ int main(int argc, char** argv)
         std::cout << "Normalisation failed!" << std::endl;
     }
 
-    oNormaliser.GetMeasuredIntegratedLoudness(&val);
-    printf("integrated loudness: %.2f LUFS\r\n", val);
-    oNormaliser.GetMeasuredTruePeak(&val);
-    printf("true peak: %.2f dBTP\r\n", linearTodBFS(val));
-    oNormaliser.GetMeasuredSamplePeak(&val);
-    printf("sample peak: %.2f dBFS\r\n", linearTodBFS(val));
-    oNormaliser.GetMeasuredMaxMomentaryLoudness(&val);
-    printf("max momentary loudness: %.2f LUFS\r\n", val);
-    oNormaliser.GetMeasuredMaxShorTermLoudness(&val);
-    printf("max short term loudness: %.2f LUFS\r\n", val);
-    oNormaliser.GetMeasuredLoudnessRange(&val);
-    printf("loudness range: %.2f LU\r\n", val);
 
+
+    oNormaliser.GetMeasuredIntegratedLoudness(&val);
+    printf("Integrated loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredTruePeak(&val);
+    printf("True peak: %.2f dBTP\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredSamplePeak(&val);
+    printf("Sample peak: %.2f dBFS\r\n", linearTodBFS(val));
+    oNormaliser.GetMeasuredMaxMomentaryLoudness(&val);
+    printf("Max momentary loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredMaxShorTermLoudness(&val);
+    printf("Max short term loudness: %.2f LUFS\r\n", val);
+    oNormaliser.GetMeasuredLoudnessRange(&val);
+    printf("Loudness range: %.2f LU\r\n", val);
     if (preProcLimiterEnabled.Get())
     {
         oNormaliser.GetPreProcessingStats(&val);
-        printf("preproc max gain reduction: %.2f dB\r\n", val);
+        printf("Preproc max gain reduction: %.2f dB\r\n", val);
     }
     if (limiterEnabled.Get())
     {
         oNormaliser.GetPostProcessingStats(&val);
-        printf("postproc max gain reduction: %.2f dB\r\n", val);
+        printf("Postproc max gain reduction: %.2f dB\r\n", val);
     }
+    oNormaliser.GetNormalisationTime(&llNormalisationDuration);
+    rtNormalisation = llFileDuration;
+    if (llNormalisationDuration != 0)
+        rtNormalisation /= llNormalisationDuration;
+    else
+        rtNormalisation = NAN;
+    printf("Normalised in: %s (%.3f x real time)\r\n", CStringTools::FormatTimeCode(llNormalisationDuration).c_str(), rtNormalisation);
+    printf("\r\n\r\n");
+
+    float rtTotal = llFileDuration;
+    long long totalProcessingTime = llAnalysisDuration + llNormalisationDuration;
+    if (totalProcessingTime != 0)
+        rtTotal /= totalProcessingTime;
+    else
+        rtTotal = NAN;
+    printf("Total processing time: %s (%.3f x real time)\r\n", CStringTools::FormatTimeCode(llAnalysisDuration + llNormalisationDuration).c_str(), rtTotal);
     return 0;
-
-
 
 }

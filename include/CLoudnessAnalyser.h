@@ -6,10 +6,14 @@ class CLoudnessAnalyser : public IAudioFilter
 {
 	ebur128_state* m_pState;
 	double m_dIntegratedLoudness;
+	double m_dMaxMomentaryLoudness;
+	double m_dMaxShortTermLoudness;
 	double m_dMomentaryLoudness;
 	double m_dShortTermLoudness;
 	double m_dLoudnessRange;
 	double m_dTruePeak;
+
+	void UpdateValues();
 
 public:
 
@@ -20,6 +24,8 @@ public:
 	int GetIntegratedLoudness(float* pLUFS);
 	int GetMaxMomentaryLoudness(float* pLUFS);
 	int GetMaxShortTermLoudness(float* pLUFS);
+	int GetCurrentMomentaryLoudness(float* pLUFS);
+	int GetCurrentShortTermLoudness(float* pLUFS);
 	int GetLoudnessRange(float* pLU);
 	int GetTruePeak(float* pdBFS);
 

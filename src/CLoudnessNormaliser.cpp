@@ -1,3 +1,8 @@
+// for time counter
+#include <Windows.h>
+#include <timeapi.h>
+
+//
 #include "CLoudnessNormaliser.h"
 #include "CAudioTools.h"
 #include "CWAVReader.h"
@@ -10,6 +15,7 @@
 #include "CSRCSourceAdapter.h"
 #include "CSRCDestinationAdapter.h"
 #include "errorcodes.h"
+#include "CStringTools.h"
 
 
 CLoudnessNormaliser::CLoudnessNormaliser()
@@ -49,6 +55,12 @@ CLoudnessNormaliser::CLoudnessNormaliser()
 
 	// upsampling
 	m_bEnableUpsampling = false;
+
+	// stats
+	m_llAnalysisTime = 0;
+	m_llNormalisationTime = 0;
+
+
 }
 
 CLoudnessNormaliser::~CLoudnessNormaliser()
@@ -176,6 +188,36 @@ int CLoudnessNormaliser::GetPostProcessingStats(float* pfLimiterMaxGainReduction
 	return 0;
 }
 
+int CLoudnessNormaliser::GetAnalysisTime(long long* pllAnalysisTime)
+{
+	*pllAnalysisTime = m_llAnalysisTime;
+	return 0;
+}
+
+int CLoudnessNormaliser::GetNormalisationTime(long long* pllNormalisationTime)
+{
+	*pllNormalisationTime = m_llNormalisationTime;
+	return 0;
+}
+
+int CLoudnessNormaliser::GetFileDuration(long long* pllFileDuration)
+{
+	CWAVReader oSrcFile;
+	int iError;
+	unsigned long ulDuration = 0;
+	
+	iError = oSrcFile.SetFileName(m_oInputFIle);
+	if (iError) return iError;
+	
+	iError = oSrcFile.GetFileDuration(&ulDuration);
+	if (iError) return iError;
+
+	*pllFileDuration = ulDuration;
+
+	return 0;
+}
+
+
 int CLoudnessNormaliser::IsLinearNormalisationPossible(bool* pbPossible)
 {
 	if (!m_bAnalysed) return AP_E_NOT_INITIALISED;
@@ -213,6 +255,15 @@ int CLoudnessNormaliser::GetNormalisationGain(float* pfGain)
 	return 0;
 }
 
+int CLoudnessNormaliser::GetConstrainedNormalisationGain(float* pfGain)
+{
+	if (!m_bAnalysed)
+		return AP_E_NOT_INITIALISED;
+
+
+	return 0;
+}
+
 int CLoudnessNormaliser::Analyse()
 {
 	CBatchProcess oProcessing;
@@ -226,6 +277,10 @@ int CLoudnessNormaliser::Analyse()
 
 	std::vector<IAudioFilter*> oFilterList;
 	int iError;
+
+	// stats
+	DWORD dwStartTime = timeGetTime();
+	m_llAnalysisTime = 0;
 
 	if (m_bEnableUpsampling)
 	{
@@ -261,17 +316,16 @@ int CLoudnessNormaliser::Analyse()
 	oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oPeakDetector));
 	oProcessing.SetFilters(oFilterList);
 	oWaveSource.SetFileName(m_oInputFIle);
-	//WAVEFORMATEX wfx;
-	//iError = oWaveSource.GetFileFormat(&wfx);
-	//if (iError)	return iError;
-	//m_iSampleRate = wfx.nSamplesPerSec;
-	//m_iChannel = wfx.nChannels;
 
-	//iError = oWaveSource.GetFormat(&m_iSampleRate, &m_iChannel);
-	//if (iError)	return iError;
+	iError = oWaveSource.GetFormat(&m_iSampleRate, &m_iChannel);
+	if (iError)	return iError;
 
 	iError = oProcessing.ProcessAllFrames();
 	if (iError)	return iError;
+
+	DWORD dwEndTime = timeGetTime();
+	m_llAnalysisTime = dwEndTime - dwStartTime;
+
 	iError = oLoudnessAnalyser.GetIntegratedLoudness(&m_fIntegratedLoudness);
 	if (iError)	return iError;
 	iError = oLoudnessAnalyser.GetTruePeak(&m_fTruepeak);
@@ -300,6 +354,9 @@ int CLoudnessNormaliser::Normalise()
 
 	if (!bLinearPossible && !m_bPostProcessingLimiterEnabled) return AP_E_OPERATION_NOT_POSSIBLE;
 
+	// stats
+	m_llNormalisationTime = 0;
+	DWORD dwStartTime = timeGetTime();
 
 	CBatchProcess oProcessing;
 	CWAVReader oWaveSource;
@@ -370,7 +427,7 @@ int CLoudnessNormaliser::Normalise()
 	if (m_bEnableUpsampling)
 	{
 		oDestinationSampleRateConverter.SetBlockDuration(400);
-		oDestinationSampleRateConverter.SetTargetSampleRate(48000);
+		oDestinationSampleRateConverter.SetTargetSampleRate(m_iSampleRate);
 		oDestinationSampleRateConverter.Set24bitOutput(false);
 		oDestinationSampleRateConverter.SetDestination(dynamic_cast<IAudioDestination*>(&oWaveDestination));
 		oFilterList.push_back(dynamic_cast<IAudioFilter*>(&oDestinationSampleRateConverter));
@@ -386,6 +443,10 @@ int CLoudnessNormaliser::Normalise()
 	oWaveDestination.SetFileName(m_oOutputFIle);
 	iError = oProcessing.ProcessAllFrames();
 	if (iError)	return iError;
+
+	DWORD dwEndTime = timeGetTime();
+	m_llNormalisationTime = dwEndTime - dwStartTime;
+
 	iError = oLoudnessAnalyser.GetIntegratedLoudness(&m_fIntegratedLoudness);
 	if (iError)	return iError;
 	iError = oLoudnessAnalyser.GetTruePeak(&m_fTruepeak);
@@ -415,19 +476,31 @@ void CLoudnessNormaliser::Test()
 	CWAVReader oWaveSource;
 	CWAVWriter oWaveDestination;
 	CSRCSourceAdapter oSourceResampler;
+	CSRCDestinationAdapter oDestinationAdapter;
 	std::vector<IAudioFilter*> oFIlters;
 	int iError;
 
 	iError = oWaveSource.SetFileName(m_oInputFIle);
 	iError = oWaveDestination.SetFileName(m_oOutputFIle);
+
 	iError = oSourceResampler.SetSource(&oWaveSource);
 	iError = oSourceResampler.SetTargetSampleRate(192000);
 	iError = oSourceResampler.SetBlockDuration(400);
-
 	oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oSourceResampler));
 	oProcessing.SetBlockDuration(400);
 	oFIlters.push_back(&oWaveDestination);
 	oProcessing.SetFilters(oFIlters);
+	oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oSourceResampler));
+	oProcessing.SetBlockDuration(400);
+
+	
+	//oDestinationAdapter.SetTargetSampleRate(192000);
+	//oDestinationAdapter.SetDestination(dynamic_cast<IAudioDestination*>(&oWaveDestination));
+	//oFIlters.push_back(&oDestinationAdapter);
+	//oProcessing.SetFilters(oFIlters);
+	//oProcessing.SetSource(dynamic_cast<IAudioSource*>(&oWaveSource));
+	//oProcessing.SetBlockDuration(400);
+
 
 	iError = oProcessing.ProcessAllFrames();
 }
@@ -437,14 +510,24 @@ int CLoudnessNormaliser::ProgessCallback(int status, unsigned long long processe
 	switch ((BatchProcessProgressStatus)status)
 	{
 	case BPS_END:
-		printf("\r\n", processed);
+		printf("\r\n");
 		break;
 	case BPS_ERROR:
-		printf("\r\nError\r\n", processed);
+		printf("\r\nError\r\n");
 		break;
 	case BPS_PROCESS:
-		printf("frames processed: %ld \r", processed);
+		CLoudnessNormaliser* pNormaliser = reinterpret_cast<CLoudnessNormaliser *>(ctx);
+		long long timems = 0;
+
+		if (pNormaliser != NULL)
+		{
+			long long effectiveSamplingrate = (pNormaliser->m_bEnableUpsampling) ? 192000 : pNormaliser->m_iSampleRate;
+			timems = (processed *1000) / effectiveSamplingrate;
+		}
+
+		printf("Processed : %s (%lld frames)  \r",CStringTools::FormatTimeCode(timems).c_str(), processed);
 		break;
 	}
+
 	return 0;
 }

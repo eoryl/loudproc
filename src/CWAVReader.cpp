@@ -117,10 +117,10 @@ int CWAVReader::GetFileDuration(unsigned long* pulDuration_ms)
     if (m_pWfx == NULL)
         return AP_E_NOT_INITIALISED;
     // data chunk size in bytes
-    float fDuration = m_mmcki.cksize;
-    fDuration *= 1000;
-    fDuration /= m_pWfx->nSamplesPerSec;
-    *pulDuration_ms = fDuration;
+    double dDuration = m_mmcki.cksize;
+    dDuration *= 1000;
+    dDuration /= m_pWfx->nSamplesPerSec;
+    *pulDuration_ms = dDuration;
 
     return 0;
 }
@@ -139,8 +139,14 @@ int CWAVReader::Terminate()
 
 int CWAVReader::GetFormat(int* piSampleRate, int* piChannels)
 {
-    if (m_pWfx == NULL) return AP_E_NOT_INITIALISED;
-    
+    if (m_pWfx == NULL)
+    {
+        int iError = OpenFile();
+        if (iError)	return iError;
+    }
+    if (m_pWfx == NULL)
+        return AP_E_NOT_INITIALISED;
+
     *piSampleRate = m_oFormat.nSamplesPerSec;
     *piChannels = m_oFormat.nChannels;
 	return 0;

@@ -16,9 +16,15 @@
     <Filter Include="Header Files\sys">
       <UniqueIdentifier>{7f63fad4-298d-4b86-928f-e96930aacb79}</UniqueIdentifier>
     </Filter>
+    <Filter Include="external">
+      <UniqueIdentifier>{43d3ac86-dc45-47aa-b79f-4d85e13ea397}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />
+    <Text Include="external\libs.txt">
+      <Filter>external</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CAmplifier.cpp">

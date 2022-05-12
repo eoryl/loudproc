@@ -68,7 +68,13 @@ int CWAVWriter::Terminate()
     if (m_hmmio == NULL) return 0;
 
     int waveErr;
-    waveErr = WaveCloseWriteFile(&m_hmmio, &m_mmcki, &m_mmckiRIFF, &m_mmioInf, m_iTotalBytesWritten);
+    waveErr = WaveCloseWriteFile(
+        &m_hmmio, 
+        &m_mmcki, 
+        &m_mmckiRIFF, 
+        &m_mmioInf, 
+        (m_oWfx.nBlockAlign != 0) ? m_iTotalBytesWritten / m_oWfx.nBlockAlign : m_iTotalBytesWritten
+    );
 
     m_hmmio = NULL;
 

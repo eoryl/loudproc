@@ -18,4 +18,5 @@ class CStringTools
 public:
 	static std::wstring StringToWideString(std::string str);
 	static std::string WidestringToString(std::wstring wstr);
+	static std::string FormatTimeCode(long long llTimeMs);
 };

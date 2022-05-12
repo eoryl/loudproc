@@ -49,3 +49,20 @@ std::string CStringTools::WidestringToString(std::wstring wstr)
     return ret;
 
 }
+
+std::string CStringTools::FormatTimeCode(long long llTimeMs)
+{
+    std::string res;
+    long long llTimeSecs = llTimeMs / 1000;
+    long long hours = hours = (llTimeSecs) / 3600;
+    long long minutes = (llTimeSecs / 60) % 60;
+    long long seconds = llTimeSecs % 60;
+    long long millseconds = llTimeMs % 1000;
+
+    size_t size = snprintf(NULL, 0, "%lld:%02lld:%02lld.%03lld", hours, minutes, seconds, millseconds);
+    res.reserve(size + 1);
+    res.resize(size);
+    snprintf(&res[0], size + 1, "%lld:%02lld:%02lld.%03lld", hours, minutes, seconds, millseconds);
+
+    return res;
+}

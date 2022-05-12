@@ -1,3 +1,7 @@
+Bugs:
+Fix result duration being short than source when using samplerate converter (buffer not flushed ?? )
+Fix invalid duration in foobar2000 (check frame count in header)
+
 Short:
 / Implement amplifier
 / Add loudness normalistion amplification rules to LoudnessNormaliser
@@ -8,8 +12,9 @@ add tolerance +/- x LUFS tolerance parameter and support in analysis
 / implement delay cancelation mechanism for filters like Peak limiter
 add sanity check on setting parameters (in normaliser first)
 / implement multi measure for loudness (add LRA, Max short term and max instantaneous)
-add processing stats (for benchmarking)
+/ add processing stats (for benchmarking)
 / implement auto mono attenuation flag
+add message if normalisation is required or not
 implement force normalisation if clipping flag
 implement verbose mode (list all params)
 use maxTP in gain calculation 
@@ -23,15 +28,18 @@ Add max momentary and max short term to linear normalisation test
 
 Medium:
 / implement upsampling to 192kHz on source (using interpolation), 
+Increase performance (more specifically look at resampler config/usage)
+consider compiling r8b sample rate conversion modules in the EXE instead of using an extrnal DLL
 consider using double precision samples instead of float (or implement both for to have fast and precision mode) and separated channels instead of interleaved
 implement some serialization/automation mechanism for filters and process (load settings from config/description file) and "pipe" result of a process to another (eg inject LUFS analysis result process in gain amplification process)
-add source/dest 24 and 32 bit wav, Wave64, BWF and MPEG2 (either libavformat+libavcodecs OR libsndfile+mpg123)
-implement a IWaveSourceAsync for live source/realtime processing
-
-Long :
-add an audio compression filter
+add an audio compression filter (check is this https://github.com/music-dsp-collection/chunkware-simple-dynamics or https://github.com/velipso/sndfilter can be relevant)
 add an EQ filter
 add an AGC filter
+add support for bwf wave64 (using libbw64)
+
+Long :
 add noise gate filter
 add append/insertion (for jingle or ads)
 add generic VST2 host filter
+add source/dest 24 and 32 bit wav, Wave64, BWF and MPEG2 (check libavformat+libavcodecs OR libsndfile+mpg123)
+implement a IWaveSourceAsync for live source/realtime processing

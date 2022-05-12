@@ -46,13 +46,15 @@ class CLoudnessNormaliser
 	// files
 	std::wstring m_oInputFIle;
 	std::wstring m_oOutputFIle;
+		
+	// stats
+	long long m_llAnalysisTime;
+	long long m_llNormalisationTime;
 
 	//
 	NORMALISER_CALLBACK m_pfProgressCallback;
 	void* m_pvProgressCallbackContext;
 
-	// call back
-	static int ProgessCallback(int status, unsigned long long processed, void* ctx);
 
 public:
 	CLoudnessNormaliser();
@@ -82,10 +84,26 @@ public:
 
 	int GetPreProcessingStats(float* pfLimiterMaxGainReductiondB);
 	int GetPostProcessingStats(float* pfLimiterMaxGainReductiondB);
+	int GetAnalysisTime(long long* pllAnalysisTime);
+	int GetNormalisationTime(long long* pllNormalisationTime);
+	int GetFileDuration(long long* pllFileDuration);
 
 	// Loudness helper
+
+	// returns true if it is possible to apply a fixed gain to reach target programme loudnes
+	// withouht exeeding maxTP
+	// returns false, result will be out of range and may be corrected using
+	// peak limiter as post processing (which may in turn invalidate programme loudness measurement)
 	int IsLinearNormalisationPossible(bool* pbPossible);
+
+	// return gain to attain desired programme loudness regardless of of maxTP and max momentary/short term loudness
 	int GetNormalisationGain(float* pfGain);
+
+	// attempts to calculate a fixed gain to achieve a result that is within tolerance
+	// programme loundess +/- tolerance
+	// tp < maxTP
+	// Maximum Momentary Loudness < maxML OR Maximum Short-term Loudness < maxSL
+	int GetConstrainedNormalisationGain(float* pfGain);
 
 	// processing
 	int Analyse();
@@ -93,6 +111,9 @@ public:
 
 	//
 	void Test();
+
+	// call back
+	static int ProgessCallback(int status, unsigned long long processed, void* ctx);
 
 };
 
