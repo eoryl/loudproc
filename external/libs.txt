@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 libebur128 (Jan Kokemüller/MIT)
 https://github.com/jiixyj/libebur128
 
@@ -14,4 +15,22 @@ Argument parser (Taylor C. Richberger/MIT)
 https://github.com/Taywee/args
 
 Broadcast Wave64 (EBU/Apache):
+=======
+libebur128 (Jan Kokemüller/MIT)
+https://github.com/jiixyj/libebur128
+
+Peak limiter (IRCAM/BSD)
+https://github.com/tcarpent/PeakLimiter
+
+r8bran Sample Rate Conversion (Aleksey Vaneev/MIT)
+https://github.com/avaneev/r8brain-free-src
+
+MMIO API wrapper for WAV files (Microsoft/MIT)
+https://github.com/microsoft/Windows-classic-samples
+
+Argument parser (Taylor C. Richberger/MIT)
+https://github.com/Taywee/args
+
+Broadcast Wave64 (EBU/Apache):
+>>>>>>> 953c2fa8859988bedf3153254f4e48e11062d749
 https://github.com/ebu/libbw64
