@@ -13,7 +13,7 @@
 * @Returns lienar value
 */
 #ifndef dBFSToLinear
-#define dBFSToLinear(dbFS)   (pow(10, ((dbFS) / 20.0f)))
+#define dBFSToLinear(dbFS)   (powf(10, ((dbFS) / 20.0f)))
 #endif 
 
 class CAudioTools

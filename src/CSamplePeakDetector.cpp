@@ -50,6 +50,9 @@ int CSamplePeakDetector::Init(int iSampleRate, int iChannels)
 		m_pfPeaks = new float[iChannels];
 		m_iChannelCount = iChannels;
 	}
+	if (m_pfPeaks == NULL) return AP_E_OUT_OF_MEMORY;
+	// init peak values to 0
+	for (int i = 0; i < m_iChannelCount; i++) m_pfPeaks[i] = 0.0f;
 
 	return 0;
 }

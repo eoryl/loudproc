@@ -5,8 +5,20 @@ void CAudioTools::BufferS16ToFloat(short* psSamples, float* pfSamples, int iSamp
 {
     for (int i = 0; i < iSampleCount; i++, psSamples++, pfSamples++)
     {
+
+        // v1
+        //*pfSamples = *psSamples;
+        //*pfSamples /= S16MAX;
+        
+        //v1 alt
+        //*pfSamples = *psSamples / 32767.0f;
+        
+        // v2
         *pfSamples = *psSamples;
-        *pfSamples /= S16MAX;
+        if (*pfSamples < 0) { *pfSamples = -*pfSamples;  *pfSamples /= S16MIN; }
+        else *pfSamples /= S16MAX;
+        
+
     }
 }
 
@@ -14,7 +26,12 @@ void CAudioTools::BufferFloatToFS16(float* pfSamples, short* psSamples, int iSam
 {
     for (int i = 0; i < iSampleCount; i++, psSamples++, pfSamples++)
     {
-        *psSamples = roundf(S16MAX * (*pfSamples));
+        //v1
+        //*psSamples = roundf(S16MAX * (*pfSamples));
+        
+        // v2
+        if (*psSamples < 0) *psSamples = S16MIN * (-*pfSamples);
+        else *psSamples = S16MAX * (*pfSamples);
     }
 }
 

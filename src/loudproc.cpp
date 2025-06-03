@@ -1,6 +1,8 @@
 // loudproc.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+#include <windows.h>
+
 #include <iostream>
 #include <locale>
 #include <string>
@@ -85,6 +87,18 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    //
+
+    SYSTEMTIME localTime;
+    GetLocalTime(&localTime);
+    //if (localTime.wYear >= 2023)
+    //{
+    //    printf("%s","Test version has expired, please get a new one.");
+    //    return 0;
+    //}
+
+    //
+
     std::wstring in = CStringTools::StringToWideString(inputFile.Get());
     std::wstring out = CStringTools::StringToWideString(outputFile.Get());
 
@@ -156,7 +170,7 @@ int main(int argc, char** argv)
     }
     printf("Linear normalisation possible: %s\r\n", (linear ? "yes" : "no"));
     oNormaliser.GetNormalisationGain(&val);
-    printf("Gain to be applied: %.2f dB\r\n", linearTodBFS(val));
+    printf("Gain to be applied: %.2f dB / linear scale factor: %.3f\r\n", linearTodBFS(val), val);
 
     oNormaliser.GetFileDuration(&llFileDuration);
     oNormaliser.GetAnalysisTime(&llAnalysisDuration);

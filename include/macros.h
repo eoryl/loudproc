@@ -1,16 +1,16 @@
 #pragma once
 
 #ifndef S16MIN
-#define S16MIN  0x8000      
+#define S16MIN  -32768     
 #endif 
 #ifndef S16MAX
-#define S16MAX  0x7fff      
+#define S16MAX  32767      
 #endif
 #ifndef S32MIN
-#define S32MIN  0x80000000  
+#define S32MIN  -2147483648  
 #endif
 #ifndef S32MAX
-#define S32MAX  0x7fffffff  
+#define S32MAX  2147483647  
 #endif
 
 #ifndef SAFE_DELETE
